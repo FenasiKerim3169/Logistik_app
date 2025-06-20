@@ -7,7 +7,8 @@ const bauten = [
   "Bau 70", "Bau 78", "Bau 90", "Bau 91", "Bau 93"
 ];
 
-const zeitslots = Array.from({ length: 48 }, (_, i) => {
+// Alle möglichen Zeitslots (48 pro Tag)
+const alleZeitslots = Array.from({ length: 48 }, (_, i) => {
   const h = String(Math.floor(i / 2)).padStart(2, '0');
   const m = i % 2 === 0 ? '00' : '30';
   return `${h}:${m}`;
@@ -15,6 +16,7 @@ const zeitslots = Array.from({ length: 48 }, (_, i) => {
 
 export default function Transportauftrag() {
   const [fahrzeugtypen, setFahrzeugtypen] = useState([]);
+  const [gebuchteZeiten, setGebuchteZeiten] = useState([]);
   const [data, setData] = useState({
     fahrzeugtyp: "",
     abholort: "",
@@ -31,6 +33,26 @@ export default function Transportauftrag() {
       .then(data => setFahrzeugtypen(data))
       .catch(err => console.error("Fehler beim Laden der Fahrzeugtypen", err));
   }, []);
+
+  // Gebuchte Zeiten laden wenn Fahrzeugtyp und Datum ausgewählt sind
+  useEffect(() => {
+    if (data.fahrzeugtyp && data.datum) {
+      fetch(`http://127.0.0.1:8000/verfuegbare-zeiten/${encodeURIComponent(data.fahrzeugtyp)}/${data.datum}`)
+        .then(res => res.json())
+        .then(data => {
+          const verfuegbare = data.verfuegbare_zeiten || [];
+          // Berechne gebuchte Zeiten (alle Zeiten minus verfügbare)
+          const gebucht = alleZeitslots.filter(zeit => !verfuegbare.includes(zeit));
+          setGebuchteZeiten(gebucht);
+        })
+        .catch(err => {
+          console.error("Fehler beim Laden der verfügbaren Zeiten", err);
+          setGebuchteZeiten([]); // Fallback: keine gebuchten Zeiten
+        });
+    } else {
+      setGebuchteZeiten([]); // Keine gebuchten Zeiten wenn kein Fahrzeugtyp/Datum
+    }
+  }, [data.fahrzeugtyp, data.datum]);
 
   // Weg in Minuten laden
   useEffect(() => {
@@ -81,6 +103,7 @@ export default function Transportauftrag() {
         alert("Transport wurde erfolgreich erstellt!");
         setData({ fahrzeugtyp: "", abholort: "", zielort: "", datum: "", startzeit: "" });
         setWegMin("");
+        setGebuchteZeiten([]);
       } else {
         const errorText = await res.text();
         alert(`Fehler ${res.status}: ${errorText}`);
@@ -88,6 +111,11 @@ export default function Transportauftrag() {
     } catch (error) {
       alert(`Netzwerkfehler: ${error.message}`);
     }
+  };
+
+  // Prüfe ob eine Zeit verfügbar ist
+  const isZeitVerfuegbar = (zeit) => {
+    return !gebuchteZeiten.includes(zeit);
   };
 
   return (
@@ -167,10 +195,22 @@ export default function Transportauftrag() {
               required
             >
               <option value="">Startzeit wählen</option>
-              {zeitslots.map((zeit) => (
-                <option key={zeit} value={zeit}>{zeit}</option>
+              {alleZeitslots.map((zeit) => (
+                <option 
+                  key={zeit} 
+                  value={zeit}
+                  disabled={!isZeitVerfuegbar(zeit)}
+                  className={!isZeitVerfuegbar(zeit) ? "text-gray-400 bg-gray-100" : ""}
+                >
+                  {zeit} {!isZeitVerfuegbar(zeit) && "(gebucht)"}
+                </option>
               ))}
             </select>
+            {data.fahrzeugtyp && data.datum && gebuchteZeiten.length > 0 && (
+              <p className="text-sm text-gray-600 mt-1">
+                {gebuchteZeiten.length} Zeiten bereits gebucht (ausgegraut)
+              </p>
+            )}
           </div>
 
           {/* Button Kachel - SECHSTE POSITION */}
