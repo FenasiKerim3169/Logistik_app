@@ -7,10 +7,31 @@ engine = create_engine("postgresql://postgres:Sercanserkan1905@localhost/logisti
 Session = sessionmaker(bind=engine)
 session = Session()
 
+def meter_to_minutes(meter, durchschnittsgeschwindigkeit_kmh=10, zusaetzliche_minuten=5, mindest_minuten=8):
+    """
+    Konvertiert Meter in Minuten basierend auf durchschnittlicher Geschwindigkeit
+    Standard: 10 km/h (sehr langsam für innerbetrieblichen Verkehr)
+    Zusätzlich: 5 Minuten für Ein-/Ausladen, Wenden, etc.
+    Mindestzeit: 8 Minuten (auch für sehr kurze Strecken)
+    """
+    # Meter zu km
+    km = meter / 1000
+    # Zeit in Stunden
+    stunden = km / durchschnittsgeschwindigkeit_kmh
+    # Zeit in Minuten
+    fahrzeit_minuten = stunden * 60
+    # Gesamtzeit = Fahrzeit + zusätzliche Zeit
+    gesamt_minuten = fahrzeit_minuten + zusaetzliche_minuten
+    # Mindestzeit anwenden
+    if gesamt_minuten < mindest_minuten:
+        gesamt_minuten = mindest_minuten
+    return round(gesamt_minuten, 1)  # Auf 1 Dezimalstelle runden
+
 def import_excel_matrix_to_distanzmatrix(excel_file):
     """
     Importiert Excel-Matrix in die distanzmatrix-Tabelle
     Matrix-Format: Zeilen = Von-Orte, Spalten = Nach-Orte
+    Konvertiert Meter zu Minuten
     """
     try:
         # Excel-Datei laden
@@ -32,7 +53,8 @@ def import_excel_matrix_to_distanzmatrix(excel_file):
                 if pd.notna(distanz_value) and distanz_value != 0:
                     von = str(von_ort).strip()
                     nach = str(nach_ort).strip()
-                    distanz_m = float(distanz_value)
+                    distanz_meter = float(distanz_value)
+                    weg_minuten = meter_to_minutes(distanz_meter)
                     
                     # Überprüfen ob Eintrag bereits existiert
                     exists = session.execute(
@@ -43,11 +65,11 @@ def import_excel_matrix_to_distanzmatrix(excel_file):
                     if not exists:
                         # Neuen Eintrag hinzufügen
                         session.execute(
-                            text("INSERT INTO distanzmatrix (von, nach, distanz_m) VALUES (:von, :nach, :distanz_m)"), 
-                            {"von": von, "nach": nach, "distanz_m": distanz_m}
+                            text("INSERT INTO distanzmatrix (von, nach, weg_min) VALUES (:von, :nach, :weg_min)"), 
+                            {"von": von, "nach": nach, "weg_min": weg_minuten}
                         )
                         imported_count += 1
-                        print(f"Importiert: {von} -> {nach}: {distanz_m}m")
+                        print(f"Importiert: {von} -> {nach}: {distanz_meter}m = {weg_minuten}min")
         
         session.commit()
         print(f"\nImport abgeschlossen! {imported_count} neue Einträge hinzugefügt.")
@@ -66,7 +88,7 @@ def show_current_data():
         result = session.execute(text("SELECT * FROM distanzmatrix LIMIT 10")).fetchall()
         print(f"\nAktuelle Daten in distanzmatrix ({len(list(session.execute(text('SELECT * FROM distanzmatrix'))))} Einträge total):")
         for row in result:
-            print(f"ID: {row.id}, Von: {row.von}, Nach: {row.nach}, Distanz: {row.distanz_m}m")
+            print(f"ID: {row.id}, Von: {row.von}, Nach: {row.nach}, Weg: {row.weg_min}min")
     except Exception as e:
         print(f"Fehler beim Anzeigen: {e}")
 

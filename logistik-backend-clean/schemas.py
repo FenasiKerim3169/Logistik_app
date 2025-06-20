@@ -36,7 +36,7 @@ class TransportCreate(BaseModel):
 
 class TransportOut(TransportCreate):
     id: int
-    distanz_m: Optional[int] = None
+    weg_min: Optional[float] = None
     class Config:
         orm_mode = True
 
@@ -60,7 +60,7 @@ class MehrfachtransportOut(BaseModel):
     datum: date
     startzeit: str
     status: str
-    gesamt_distanz_m: Optional[int] = None
+    gesamt_weg_min: Optional[float] = None
     fahrer_id: Optional[int] = None
     erstellt_am: datetime
     class Config:
@@ -112,7 +112,7 @@ class LogbuchOut(LogbuchCreate):
 class DistanzCreate(BaseModel):
     von: str
     nach: str
-    distanz_m: float
+    weg_min: float
 
 class DistanzOut(DistanzCreate):
     id: int

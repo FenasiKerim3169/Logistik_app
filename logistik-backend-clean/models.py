@@ -27,7 +27,7 @@ class Transport(Base):
     fahrzeugtyp = Column(String)
     datum = Column(Date)
     startzeit = Column(String)
-    distanz_m = Column(Integer, nullable=True)
+    weg_min = Column(Float, nullable=True)
     zeitfenster = Column(DateTime)
     status = Column(String, default="offen")
     begruendung = Column(Text)
@@ -43,7 +43,7 @@ class Mehrfachtransport(Base):
     datum = Column(Date)
     startzeit = Column(String)
     status = Column(String, default="offen")
-    gesamt_distanz_m = Column(Integer)
+    gesamt_weg_min = Column(Float)
     fahrer_id = Column(Integer)
     erstellt_am = Column(DateTime)
     
@@ -58,7 +58,7 @@ class MehrfachtransportRoute(Base):
     reihenfolge = Column(Integer)  # 1, 2, 3, etc.
     von = Column(String)
     nach = Column(String)
-    distanz_m = Column(Integer)
+    weg_min = Column(Float)
 
 class Zeitfenster(Base):
     __tablename__ = "zeitfenster"
@@ -91,7 +91,7 @@ class Distanz(Base):
     id = Column(Integer, primary_key=True, index=True)
     von = Column(String)
     nach = Column(String)
-    distanz_m = Column(Float)
+    weg_min = Column(Float)
 
 class ArchivTransport(Base):
     __tablename__ = "archiv_transporte"

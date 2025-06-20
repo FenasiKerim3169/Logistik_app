@@ -125,16 +125,16 @@ def benutzer_loeschen(id: int, db: Session = Depends(get_db)):
 # -------------------- TRANSPORTE --------------------
 @app.post("/transporte", response_model=schemas.TransportOut)
 def transport_erstellen(transport: schemas.TransportCreate, db: Session = Depends(get_db)):
-    distanz = db.query(Distanz.distanz_m).filter(
+    distanz = db.query(Distanz.weg_min).filter(
         (Distanz.von == transport.von) & (Distanz.nach == transport.nach)
     ).first()
 
     if not distanz:
-        distanz = db.query(Distanz.distanz_m).filter(
+        distanz = db.query(Distanz.weg_min).filter(
             (Distanz.von == transport.nach) & (Distanz.nach == transport.von)
         ).first()
 
-    distanz_m = int(distanz[0]) if distanz else None
+    weg_min = float(distanz[0]) if distanz else None
 
     t = Transport(
         von=transport.von,
@@ -142,7 +142,7 @@ def transport_erstellen(transport: schemas.TransportCreate, db: Session = Depend
         fahrzeugtyp=transport.fahrzeugtyp,
         datum=transport.datum,
         startzeit=transport.startzeit,
-        distanz_m=distanz_m,
+        weg_min=weg_min,
         zeitfenster=transport.zeitfenster,
         status=transport.status,
         begruendung=transport.begruendung,
@@ -182,17 +182,17 @@ def transport_loeschen(id: int, db: Session = Depends(get_db)):
 @app.post("/mehrfachtransporte", response_model=schemas.MehrfachtransportOut)
 def mehrfachtransport_erstellen(mehrfach: schemas.MehrfachtransportCreate, db: Session = Depends(get_db)):
     # Gesamtdistanz berechnen
-    gesamt_distanz = 0
+    gesamt_weg = 0
     for route in mehrfach.routen:
-        distanz = db.query(Distanz.distanz_m).filter(
+        distanz = db.query(Distanz.weg_min).filter(
             (Distanz.von == route.von) & (Distanz.nach == route.nach)
         ).first()
         if not distanz:
-            distanz = db.query(Distanz.distanz_m).filter(
+            distanz = db.query(Distanz.weg_min).filter(
                 (Distanz.von == route.nach) & (Distanz.nach == route.von)
             ).first()
         if distanz:
-            gesamt_distanz += int(distanz[0])
+            gesamt_weg += float(distanz[0])
     
     # Mehrfachtransport erstellen
     mt = Mehrfachtransport(
@@ -200,7 +200,7 @@ def mehrfachtransport_erstellen(mehrfach: schemas.MehrfachtransportCreate, db: S
         fahrzeugtyp=mehrfach.fahrzeugtyp,
         datum=mehrfach.datum,
         startzeit=mehrfach.startzeit,
-        gesamt_distanz_m=gesamt_distanz,
+        gesamt_weg_min=gesamt_weg,
         fahrer_id=mehrfach.fahrer_id,
         erstellt_am=datetime.now()
     )
@@ -210,21 +210,21 @@ def mehrfachtransport_erstellen(mehrfach: schemas.MehrfachtransportCreate, db: S
     
     # Routen hinzufügen
     for route in mehrfach.routen:
-        distanz = db.query(Distanz.distanz_m).filter(
+        distanz = db.query(Distanz.weg_min).filter(
             (Distanz.von == route.von) & (Distanz.nach == route.nach)
         ).first()
         if not distanz:
-            distanz = db.query(Distanz.distanz_m).filter(
+            distanz = db.query(Distanz.weg_min).filter(
                 (Distanz.von == route.nach) & (Distanz.nach == route.von)
             ).first()
-        distanz_m = int(distanz[0]) if distanz else 0
+        weg_min = float(distanz[0]) if distanz else 0
         
         route_obj = MehrfachtransportRoute(
             mehrfachtransport_id=mt.id,
             reihenfolge=route.reihenfolge,
             von=route.von,
             nach=route.nach,
-            distanz_m=distanz_m
+            weg_min=weg_min
         )
         db.add(route_obj)
     

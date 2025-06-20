@@ -22,7 +22,7 @@ export default function Transportauftrag() {
     datum: "",
     startzeit: ""
   });
-  const [distanz, setDistanz] = useState("");
+  const [wegMin, setWegMin] = useState("");
 
   // Fahrzeugtypen laden
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function Transportauftrag() {
       .catch(err => console.error("Fehler beim Laden der Fahrzeugtypen", err));
   }, []);
 
-  // Distanz laden
+  // Weg in Minuten laden
   useEffect(() => {
     if (data.abholort && data.zielort && data.abholort !== data.zielort) {
       fetch("http://127.0.0.1:8000/distanzmatrix")
@@ -42,11 +42,11 @@ export default function Transportauftrag() {
             (e.von === data.abholort && e.nach === data.zielort) ||
             (e.von === data.zielort && e.nach === data.abholort)
           );
-          setDistanz(found ? Math.round(found.distanz_m) : "");
+          setWegMin(found ? found.weg_min : "");
         })
-        .catch(() => setDistanz(""));
+        .catch(() => setWegMin(""));
     } else {
-      setDistanz("");
+      setWegMin("");
     }
   }, [data.abholort, data.zielort]);
 
@@ -80,7 +80,7 @@ export default function Transportauftrag() {
       if (res.ok) {
         alert("Transport wurde erfolgreich erstellt!");
         setData({ fahrzeugtyp: "", abholort: "", zielort: "", datum: "", startzeit: "" });
-        setDistanz("");
+        setWegMin("");
       } else {
         const errorText = await res.text();
         alert(`Fehler ${res.status}: ${errorText}`);
@@ -97,7 +97,7 @@ export default function Transportauftrag() {
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           
-          {/* Fahrzeugtyp Kachel */}
+          {/* Fahrzeugtyp Kachel - ERSTE POSITION */}
           <div className="bg-white p-4 rounded-lg shadow border">
             <h3 className="font-semibold text-gray-700 mb-2">Fahrzeugtyp</h3>
             <select
@@ -113,7 +113,7 @@ export default function Transportauftrag() {
             </select>
           </div>
 
-          {/* Bau von Kachel */}
+          {/* Bau von Kachel - ZWEITE POSITION */}
           <div className="bg-white p-4 rounded-lg shadow border">
             <h3 className="font-semibold text-gray-700 mb-2">Bau von</h3>
             <select
@@ -129,7 +129,7 @@ export default function Transportauftrag() {
             </select>
           </div>
 
-          {/* Bau nach Kachel */}
+          {/* Bau nach Kachel - DRITTE POSITION */}
           <div className="bg-white p-4 rounded-lg shadow border">
             <h3 className="font-semibold text-gray-700 mb-2">Bau nach</h3>
             <select
@@ -145,7 +145,7 @@ export default function Transportauftrag() {
             </select>
           </div>
 
-          {/* Datum Kachel */}
+          {/* Datum Kachel - VIERTE POSITION */}
           <div className="bg-white p-4 rounded-lg shadow border">
             <h3 className="font-semibold text-gray-700 mb-2">Datum</h3>
             <input
@@ -157,7 +157,7 @@ export default function Transportauftrag() {
             />
           </div>
 
-          {/* Startzeit Kachel */}
+          {/* Startzeit Kachel - FÜNFTE POSITION */}
           <div className="bg-white p-4 rounded-lg shadow border">
             <h3 className="font-semibold text-gray-700 mb-2">Startzeit</h3>
             <select
@@ -173,7 +173,7 @@ export default function Transportauftrag() {
             </select>
           </div>
 
-          {/* Button Kachel */}
+          {/* Button Kachel - SECHSTE POSITION */}
           <div className="bg-white p-4 rounded-lg shadow border flex items-center justify-center">
             <button
               type="submit"
@@ -185,11 +185,11 @@ export default function Transportauftrag() {
 
         </div>
 
-        {/* Distanz Anzeige */}
-        {distanz && (
+        {/* Weg in Minuten Anzeige */}
+        {wegMin && (
           <div className="bg-white p-4 rounded-lg shadow border text-center">
             <p className="text-lg font-semibold text-gray-700">
-              Entfernung: <span className="text-blue-600">{distanz} Meter</span>
+              Fahrzeit: <span className="text-blue-600">{wegMin} Minuten</span>
             </p>
           </div>
         )}
